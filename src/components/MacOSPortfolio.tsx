@@ -510,7 +510,7 @@ const MacOSPortfolio: React.FC = () => {
         }`}
       >
         <div className="flex items-center space-x-2">
-          <img src="public/icon.png" alt="Logo llomen" className="h-5 w-5" />
+          <img src="../../public/icon.png" alt="Logo llomen" className="h-5 w-5" />
           {(Object.keys(menuOptions) as MenuKey[]).map((menu) => (
             <div key={menu} className="relative">
               <button
@@ -720,7 +720,7 @@ const MacOSPortfolio: React.FC = () => {
         className={`absolute bottom-2 left-1/2 flex -translate-x-1/2 transform items-end space-x-2 rounded-2xl border px-3 py-2 backdrop-blur-xl ${
           isDarkMode ? 'border-white/20 bg-gray-900/40' : 'border-white/30 bg-white/20'
         }`}
-        style={{ zIndex: 10000 }}
+        style={{ zIndex: 9000 }}
       >
         {dockIcons.map((icon, idx) => (
           <button
