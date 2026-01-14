@@ -1,5 +1,8 @@
-import { Moon, Sun } from 'lucide-react';
+import Lottie from 'lottie-react';
+import { Heart, Moon, Sun } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+
+import loadingAnimation from '../../public/animations/loading_gray.json';
 
 interface Window {
   id: string;
@@ -15,6 +18,22 @@ interface Window {
 }
 
 const MacOSPortfolio: React.FC = () => {
+  // Opciones de cada menú
+  const menuOptions = {
+    Archivo: ['Nuevo', 'Abrir', 'Guardar'],
+    Editar: ['Deshacer', 'Copiar', 'Pegar'],
+    Ver: ['Pantalla completa', 'Zoom', 'Mostrar barra lateral'],
+    Ir: ['Escritorio', 'Documentos', 'Descargas'],
+  };
+  // Selección de área en el escritorio
+  const [selectRect, setSelectRect] = useState<null | {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }>(null);
+  const [selectStart, setSelectStart] = useState<null | { x: number; y: number }>(null);
+  const [selectedIcons, setSelectedIcons] = useState<number[]>([]);
   const [windows, setWindows] = useState<Window[]>([]);
   const [nextZIndex, setNextZIndex] = useState(100);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -42,15 +61,23 @@ const MacOSPortfolio: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const openWindow = (title: string, component: React.ReactNode, width = 600, height = 400) => {
+  const openWindow = (
+    title: string,
+    component: React.ReactNode,
+    width?: number,
+    height?: number
+  ) => {
+    // Si width/height no están definidos, usar valores por defecto
+    const winWidth = typeof width === 'number' ? width : 600;
+    const winHeight = typeof height === 'number' ? height : 400;
     const newWindow: Window = {
       id: `window-${Date.now()}`,
       title,
       component,
       x: 100 + windows.length * 30,
       y: 80 + windows.length * 30,
-      width,
-      height,
+      width: winWidth,
+      height: winHeight,
       isMinimized: false,
       isAnimating: true,
       zIndex: nextZIndex,
@@ -219,35 +246,80 @@ const MacOSPortfolio: React.FC = () => {
   const AboutContent = () => (
     <div className={`p-6 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
       <h2 className="mb-4 text-2xl font-bold">Sobre mí</h2>
-      <p className="mb-3">Desarrollador especializado en aplicaciones móviles.</p>
-      <p className="mb-3">Experiencia en React Native, iOS y Android.</p>
-      <p>Apasionado por crear experiencias de usuario excepcionales.</p>
+      <p className="mb-3">
+        Desarrollador especializado en aplicaciones móviles con tecnologías hibridas. (Flutter &
+        React Native)
+      </p>
+      <p className="mb-3">Experiencia en desarrollo FrontEnd con React y TypeScript.</p>
+      <p className="mb-3">Experiencia en desarrollo backend con Python y FastAPI.</p>
+      <p className="mb-3">Integraciones de arquitectura con AWS.</p>
+      <p className="mb-3">Inglés conversacional sin titulación.</p>
+      <p className="mb-3">Apasionado del mundo de desarrollo de videojuegos.</p>
+      <p>
+        Always developing trust <Heart />
+      </p>
     </div>
   );
 
   const ProjectsContent = () => (
     <div className={`p-6 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-      <h2 className="mb-4 text-2xl font-bold">Proyectos</h2>
-      <div className="space-y-4">
-        <div className={`border-b pb-3 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-          <h3 className="text-lg font-semibold">App de Comercio</h3>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Aplicación móvil para e-commerce con pasarela de pago
-          </p>
-        </div>
-        <div className={`border-b pb-3 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-          <h3 className="text-lg font-semibold">Red Social</h3>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Plataforma social con chat en tiempo real
-          </p>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold">Fitness Tracker</h3>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            App para seguimiento de ejercicios y nutrición
-          </p>
-        </div>
-      </div>
+      <h2 className="mb-4 text-2xl font-bold">Experiencia Laboral</h2>
+      <ul className="divide-y rounded-xl border border-gray-200 bg-white/80 shadow">
+        <li className="flex items-start gap-4 p-4 transition-colors hover:bg-gray-100">
+          <div>
+            <h3 className="text-lg font-semibold">
+              CORBITAL{' '}
+              <span className="text-xs font-normal text-gray-400">
+                | Desarrollador Full Stack (2021-2024)
+              </span>
+            </h3>
+            <p className="text-md text-black-900 ml-5 mt-2 dark:text-gray-400">
+              En mi desarrollo en Corbital, he pasado de ser Junior a Lead Front End Developer,
+              llegando a tener un Junior Developer a mi cargo.
+            </p>
+            <ul className="ml-5 mt-2 list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <li>Aplicación móvil para tarjetas coorporativas</li>
+              <li>Desarrollo de panel de administración web con React</li>
+              <li>Desarrollo de APIs con REST Framework y FastAPI en Python</li>
+              <li>Gestión de contenedores ECS y entornos Amplify en AWS</li>
+              <li>Desarrollo de Aplicación web con Drupal 10</li>
+              <li>
+                Aplicación móvil de marketplace con +10000 productos y pasarela de pago con Stripe
+              </li>
+              <li>
+                Aplicación web de portal de nutricionistas para gestionar los clientes (Chat en
+                tiempo real, pasarela de pago, notificaciones)
+              </li>
+            </ul>
+          </div>
+        </li>
+        <li className="flex items-start gap-4 p-4 transition-colors hover:bg-gray-100">
+          <div>
+            <h3 className="text-lg font-semibold">
+              ExioHR{' '}
+              <span className="text-xs font-normal text-gray-400">
+                | Desarrollador Full Stack (2024-2026)
+              </span>
+            </h3>
+            <p className="text-md text-black-900 ml-5 mt-2 dark:text-gray-400">
+              En mi paso por ExioHR he desarrollado integramente la Aplicación móvil para su
+              plataforma del sistema de empleados. También he desarrollado toda la parte del backend
+              de la misma y he desarrollado parte de la Aplicación web en el FrontEnd con React y
+              TypeScript.
+            </p>
+            <ul className="ml-5 mt-2 list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <li>
+                Aplicación móvil para gestión de empleados (Fichaje, Vacaciones, Ausencias,
+                Notificaciones...)
+              </li>
+              <li>Desarrollo de Aplicación web con React Typescript</li>
+              <li>Desarrollo de APIs con FastAPI en Python</li>
+              <li>Integración con APIs externas</li>
+              <li>Desarrollo de librería de componentes propia</li>
+            </ul>
+          </div>
+        </li>
+      </ul>
     </div>
   );
 
@@ -257,11 +329,11 @@ const MacOSPortfolio: React.FC = () => {
         className="relative overflow-hidden rounded-[3rem] bg-black shadow-2xl"
         style={{ width: '375px', height: '667px', maxWidth: '100%', maxHeight: '100%' }}
       >
-        <div className="absolute left-1/2 top-0 z-10 h-7 w-40 -translate-x-1/2 transform rounded-b-3xl bg-black"></div>
+        <div className="absolute left-1/2 top-2 z-10 h-7 w-32 -translate-x-1/2 transform rounded-3xl bg-black"></div>
         <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[2.8rem] bg-white text-gray-400">
           <div className="text-center">
             <div className="mb-2 text-6xl">📱</div>
-            <p>iOS Emulator Frame</p>
+            <p>iPhone 17</p>
             <p className="mt-2 text-sm">375 x 667 px</p>
           </div>
         </div>
@@ -275,15 +347,36 @@ const MacOSPortfolio: React.FC = () => {
       <div className="space-y-3">
         <div>
           <p className="font-semibold">Email</p>
-          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>contacto@ejemplo.com</p>
+          <a
+            className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}
+            href="mailto:llomen@outlook.es"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            llomen@outlook.es
+          </a>
         </div>
         <div>
           <p className="font-semibold">LinkedIn</p>
-          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>linkedin.com/in/usuario</p>
+          <a
+            className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}
+            href="https://linkedin.com/in/antoniollm"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            linkedin.com/in/antoniollm
+          </a>
         </div>
         <div>
           <p className="font-semibold">GitHub</p>
-          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>github.com/usuario</p>
+          <a
+            className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}
+            href="https://github.com/LlomenYT"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            github.com/LlomenYT
+          </a>
         </div>
       </div>
     </div>
@@ -297,13 +390,105 @@ const MacOSPortfolio: React.FC = () => {
   ];
 
   const desktopIcons = [
-    { name: 'Portfolio', emoji: '📂', x: 50, y: 100 },
-    { name: 'Documentos', emoji: '📄', x: 50, y: 200 },
-    { name: 'Fotos', emoji: '🖼️', x: 50, y: 300 },
+    { name: 'Navegador', emoji: '🌍', x: 50, y: 60 },
+    { name: 'Documentos', emoji: '📄', x: 50, y: 170 },
+    { name: 'Fotos', emoji: '🖼️', x: 50, y: 280 },
   ];
 
+  // Loading Animation Logic
+  const [loading, setLoading] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+  const lottieRef = React.useRef<any>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFadeOut(true);
+      setTimeout(() => setLoading(false), 600); // Match the duration of the fade-out
+    }, 3000); // Show loading for 3 seconds
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Funciones para selección de área
+  const handleDesktopMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Solo si se hace click en el fondo, no en iconos ni ventanas
+    if (
+      (e.target as HTMLElement).closest('.desktop-icon') ||
+      (e.target as HTMLElement).closest('.window')
+    )
+      return;
+    setSelectStart({ x: e.clientX, y: e.clientY });
+    setSelectRect({ x: e.clientX, y: e.clientY, w: 0, h: 0 });
+    setSelectedIcons([]);
+  };
+
+  useEffect(() => {
+    if (!selectStart) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const x1 = selectStart.x;
+      const y1 = selectStart.y;
+      const x2 = e.clientX;
+      const y2 = e.clientY;
+      setSelectRect({
+        x: Math.min(x1, x2),
+        y: Math.min(y1, y2),
+        w: Math.abs(x2 - x1),
+        h: Math.abs(y2 - y1),
+      });
+    };
+    const handleMouseUp = () => {
+      setSelectStart(null);
+      setSelectRect(null);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [selectStart]);
+
+  useEffect(() => {
+    if (!selectRect) return;
+    // Seleccionar iconos dentro del área
+    const selected: number[] = [];
+    desktopIcons.forEach((icon, idx) => {
+      // Icon bounds
+      const iconX = icon.x;
+      const iconY = icon.y;
+      const iconW = 80; // aprox ancho icono
+      const iconH = 80; // aprox alto icono
+      if (
+        selectRect.x < iconX + iconW &&
+        selectRect.x + selectRect.w > iconX &&
+        selectRect.y < iconY + iconH &&
+        selectRect.y + selectRect.h > iconY
+      ) {
+        selected.push(idx);
+      }
+    });
+    setSelectedIcons(selected);
+  }, [selectRect, desktopIcons]);
+
+  type MenuKey = keyof typeof menuOptions;
+  const [openDropdown, setOpenDropdown] = useState<MenuKey | null>(null);
+
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
+    <div className="relative h-screen w-screen select-none overflow-hidden font-sans">
+      {loading && (
+        <div
+          className={`duration-600 fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black transition-opacity ${fadeOut ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+        >
+          <div className="flex h-40 w-40 items-center justify-center">
+            <Lottie
+              lottieRef={lottieRef}
+              animationData={loadingAnimation}
+              loop
+              autoplay
+              style={{ width: '30%', height: '30%' }}
+            />
+          </div>
+        </div>
+      )}
       {/* Wallpaper Background */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -324,36 +509,43 @@ const MacOSPortfolio: React.FC = () => {
             : 'border-white/30 bg-white/20 text-white'
         }`}
       >
-        <div className="flex items-center space-x-4">
-          <span className="font-bold">🍎</span>
-          <button
-            className={`rounded px-2 py-0.5 ${
-              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
-            }`}
-          >
-            Archivo
-          </button>
-          <button
-            className={`rounded px-2 py-0.5 ${
-              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
-            }`}
-          >
-            Editar
-          </button>
-          <button
-            className={`rounded px-2 py-0.5 ${
-              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
-            }`}
-          >
-            Ver
-          </button>
-          <button
-            className={`rounded px-2 py-0.5 ${
-              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
-            }`}
-          >
-            Ir
-          </button>
+        <div className="flex items-center space-x-2">
+          <img src="public/icon.png" alt="Logo llomen" className="h-5 w-5" />
+          {(Object.keys(menuOptions) as MenuKey[]).map((menu) => (
+            <div key={menu} className="relative">
+              <button
+                className={`rounded px-2 py-0.5 ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
+                }`}
+                onClick={() => setOpenDropdown(openDropdown === menu ? null : menu)}
+              >
+                {menu}
+              </button>
+              {openDropdown === menu && (
+                <div
+                  className={`absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border shadow-lg ${
+                    isDarkMode
+                      ? 'border-gray-700 bg-gray-900 text-white'
+                      : 'border-gray-200 bg-white text-gray-800'
+                  }`}
+                  onMouseLeave={() => setOpenDropdown(null)}
+                >
+                  {menuOptions[menu].map((option) => (
+                    <button
+                      key={option}
+                      className={`block w-full px-4 py-2 text-left text-sm hover:bg-gray-800 dark:hover:bg-gray-100`}
+                      onClick={() => {
+                        setOpenDropdown(null);
+                        // Aquí puedes añadir la acción de cada opción si lo deseas
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
         <div className="ml-auto flex items-center space-x-4">
@@ -375,13 +567,17 @@ const MacOSPortfolio: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Icons */}
-      <div className="relative">
+      {/* Desktop Icons y selección */}
+      <div
+        className="relative h-full w-full"
+        style={{ position: 'absolute', inset: 0, zIndex: 10 }}
+        onMouseDown={handleDesktopMouseDown}
+      >
         {desktopIcons.map((icon, idx) => (
           <div
             key={idx}
-            className="group absolute flex w-20 cursor-pointer flex-col items-center"
-            style={{ left: icon.x, top: icon.y }}
+            className={`desktop-icon group absolute flex w-20 cursor-pointer flex-col items-center ${selectedIcons.includes(idx) ? 'bg-white/60 ring-2' : ''}`}
+            style={{ left: icon.x, top: icon.y, borderRadius: 12 }}
             onDoubleClick={() =>
               openWindow(
                 icon.name,
@@ -403,6 +599,23 @@ const MacOSPortfolio: React.FC = () => {
             </span>
           </div>
         ))}
+        {/* Área de selección tipo macOS */}
+        {selectRect && (
+          <div
+            style={{
+              position: 'absolute',
+              left: selectRect.x,
+              top: selectRect.y,
+              width: selectRect.w,
+              height: selectRect.h,
+              background: 'rgba(255,255,255,0.25)',
+              border: '1.5px solid rgba(177, 177, 193, 0.25)',
+              borderRadius: 4,
+              boxShadow: '0 0 8px 0 rgba(180,180,200,0.15)',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
       </div>
 
       {/* Windows */}
@@ -452,6 +665,7 @@ const MacOSPortfolio: React.FC = () => {
                 className={`flex-1 text-center text-sm font-medium ${
                   isDarkMode ? 'text-gray-200' : 'text-gray-700'
                 }`}
+                style={{ position: 'relative', left: '-3%', zIndex: 1, pointerEvents: 'none' }}
               >
                 {window.title}
               </div>
@@ -506,6 +720,7 @@ const MacOSPortfolio: React.FC = () => {
         className={`absolute bottom-2 left-1/2 flex -translate-x-1/2 transform items-end space-x-2 rounded-2xl border px-3 py-2 backdrop-blur-xl ${
           isDarkMode ? 'border-white/20 bg-gray-900/40' : 'border-white/30 bg-white/20'
         }`}
+        style={{ zIndex: 10000 }}
       >
         {dockIcons.map((icon, idx) => (
           <button
