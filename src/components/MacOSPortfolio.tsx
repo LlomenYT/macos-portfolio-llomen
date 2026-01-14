@@ -1,0 +1,551 @@
+import { Moon, Sun } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
+interface Window {
+  id: string;
+  title: string;
+  component: React.ReactNode;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isMinimized: boolean;
+  isAnimating: boolean;
+  zIndex: number;
+}
+
+const MacOSPortfolio: React.FC = () => {
+  const [windows, setWindows] = useState<Window[]>([]);
+  const [nextZIndex, setNextZIndex] = useState(100);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [dragging, setDragging] = useState<{
+    windowId: string;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
+  const [resizing, setResizing] = useState<{
+    windowId: string;
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+    direction: string;
+  } | null>(null);
+
+  // Wallpaper URL - Reemplaza con tu propia imagen
+  const wallpaperUrl =
+    'https://4kwallpapers.com/images/wallpapers/macos-catalina-mountains-island-night-stock-5k-6016x6016-189.jpg';
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const openWindow = (title: string, component: React.ReactNode, width = 600, height = 400) => {
+    const newWindow: Window = {
+      id: `window-${Date.now()}`,
+      title,
+      component,
+      x: 100 + windows.length * 30,
+      y: 80 + windows.length * 30,
+      width,
+      height,
+      isMinimized: false,
+      isAnimating: true,
+      zIndex: nextZIndex,
+    };
+    setWindows([...windows, newWindow]);
+    setNextZIndex(nextZIndex + 1);
+
+    // Quitar la animación después de que termine
+    setTimeout(() => {
+      setWindows((prev) =>
+        prev.map((w) => (w.id === newWindow.id ? { ...w, isAnimating: false } : w))
+      );
+    }, 400);
+  };
+
+  const closeWindow = (id: string) => {
+    setWindows(windows.filter((w) => w.id !== id));
+  };
+
+  const minimizeWindow = (id: string) => {
+    setWindows(windows.map((w) => (w.id === id ? { ...w, isAnimating: true } : w)));
+
+    // Esperar a que termine la animación antes de minimizar
+    setTimeout(() => {
+      setWindows((prev) =>
+        prev.map((w) => (w.id === id ? { ...w, isMinimized: true, isAnimating: false } : w))
+      );
+    }, 400);
+  };
+
+  const restoreWindow = (id: string) => {
+    setWindows(
+      windows.map((w) => {
+        if (w.id === id) {
+          return { ...w, isMinimized: false, zIndex: nextZIndex };
+        }
+        return w;
+      })
+    );
+    setNextZIndex(nextZIndex + 1);
+  };
+
+  const maximizeWindow = (id: string) => {
+    setWindows(
+      windows.map((w) => {
+        if (w.id === id) {
+          // Si ya está maximizada, restaurar tamaño original
+          if (w.width === window.innerWidth && w.height === window.innerHeight - 28 - 82) {
+            return { ...w, x: 100, y: 80, width: 600, height: 400 };
+          }
+          // Maximizar: pantalla completa menos barra superior (28px) y dock (82px)
+          return {
+            ...w,
+            x: 0,
+            y: 28,
+            width: window.innerWidth,
+            height: window.innerHeight - 28 - 82,
+          };
+        }
+        return w;
+      })
+    );
+  };
+
+  const bringToFront = (id: string) => {
+    setWindows(windows.map((w) => (w.id === id ? { ...w, zIndex: nextZIndex } : w)));
+    setNextZIndex(nextZIndex + 1);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, windowId: string) => {
+    if ((e.target as HTMLElement).closest('.window-controls')) return;
+    if ((e.target as HTMLElement).closest('.resize-handle')) return;
+    bringToFront(windowId);
+    const window = windows.find((w) => w.id === windowId);
+    if (window) {
+      setDragging({
+        windowId,
+        offsetX: e.clientX - window.x,
+        offsetY: e.clientY - window.y,
+      });
+    }
+  };
+
+  const handleResizeMouseDown = (e: React.MouseEvent, windowId: string, direction: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const window = windows.find((w) => w.id === windowId);
+    if (window) {
+      setResizing({
+        windowId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startWidth: window.width,
+        startHeight: window.height,
+        direction,
+      });
+      bringToFront(windowId);
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (dragging) {
+        setWindows(
+          windows.map((w) =>
+            w.id === dragging.windowId
+              ? { ...w, x: e.clientX - dragging.offsetX, y: e.clientY - dragging.offsetY }
+              : w
+          )
+        );
+      }
+      if (resizing) {
+        const deltaX = e.clientX - resizing.startX;
+        const deltaY = e.clientY - resizing.startY;
+
+        setWindows(
+          windows.map((w) => {
+            if (w.id === resizing.windowId) {
+              const newWindow = { ...w };
+
+              // Redimensionar según la dirección
+              if (resizing.direction.includes('e')) {
+                newWindow.width = Math.max(300, resizing.startWidth + deltaX);
+              }
+              if (resizing.direction.includes('w')) {
+                const newWidth = Math.max(300, resizing.startWidth - deltaX);
+                if (newWidth > 300) {
+                  newWindow.x = w.x + deltaX;
+                  newWindow.width = newWidth;
+                }
+              }
+              if (resizing.direction.includes('s')) {
+                newWindow.height = Math.max(200, resizing.startHeight + deltaY);
+              }
+              if (resizing.direction.includes('n')) {
+                const newHeight = Math.max(200, resizing.startHeight - deltaY);
+                if (newHeight > 200) {
+                  newWindow.y = w.y + deltaY;
+                  newWindow.height = newHeight;
+                }
+              }
+
+              return newWindow;
+            }
+            return w;
+          })
+        );
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDragging(null);
+      setResizing(null);
+    };
+
+    if (dragging || resizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [dragging, resizing, windows]);
+
+  const AboutContent = () => (
+    <div className={`p-6 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+      <h2 className="mb-4 text-2xl font-bold">Sobre mí</h2>
+      <p className="mb-3">Desarrollador especializado en aplicaciones móviles.</p>
+      <p className="mb-3">Experiencia en React Native, iOS y Android.</p>
+      <p>Apasionado por crear experiencias de usuario excepcionales.</p>
+    </div>
+  );
+
+  const ProjectsContent = () => (
+    <div className={`p-6 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+      <h2 className="mb-4 text-2xl font-bold">Proyectos</h2>
+      <div className="space-y-4">
+        <div className={`border-b pb-3 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+          <h3 className="text-lg font-semibold">App de Comercio</h3>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Aplicación móvil para e-commerce con pasarela de pago
+          </p>
+        </div>
+        <div className={`border-b pb-3 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+          <h3 className="text-lg font-semibold">Red Social</h3>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Plataforma social con chat en tiempo real
+          </p>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">Fitness Tracker</h3>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            App para seguimiento de ejercicios y nutrición
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const EmulatorContent: React.FC = () => (
+    <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 p-4">
+      <div
+        className="relative overflow-hidden rounded-[3rem] bg-black shadow-2xl"
+        style={{ width: '375px', height: '667px', maxWidth: '100%', maxHeight: '100%' }}
+      >
+        <div className="absolute left-1/2 top-0 z-10 h-7 w-40 -translate-x-1/2 transform rounded-b-3xl bg-black"></div>
+        <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[2.8rem] bg-white text-gray-400">
+          <div className="text-center">
+            <div className="mb-2 text-6xl">📱</div>
+            <p>iOS Emulator Frame</p>
+            <p className="mt-2 text-sm">375 x 667 px</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ContactContent = () => (
+    <div className={`p-6 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+      <h2 className="mb-4 text-2xl font-bold">Contacto</h2>
+      <div className="space-y-3">
+        <div>
+          <p className="font-semibold">Email</p>
+          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>contacto@ejemplo.com</p>
+        </div>
+        <div>
+          <p className="font-semibold">LinkedIn</p>
+          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>linkedin.com/in/usuario</p>
+        </div>
+        <div>
+          <p className="font-semibold">GitHub</p>
+          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>github.com/usuario</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const dockIcons = [
+    { name: 'Sobre mí', emoji: '👤', content: <AboutContent /> },
+    { name: 'Proyectos', emoji: '💼', content: <ProjectsContent /> },
+    { name: 'iOS Emulator', emoji: '📱', content: <EmulatorContent />, width: 450, height: 750 },
+    { name: 'Contacto', emoji: '✉️', content: <ContactContent /> },
+  ];
+
+  const desktopIcons = [
+    { name: 'Portfolio', emoji: '📂', x: 50, y: 100 },
+    { name: 'Documentos', emoji: '📄', x: 50, y: 200 },
+    { name: 'Fotos', emoji: '🖼️', x: 50, y: 300 },
+  ];
+
+  return (
+    <div className="relative h-screen w-screen overflow-hidden">
+      {/* Wallpaper Background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: `url(${wallpaperUrl})`,
+          filter: isDarkMode ? 'brightness(0.7)' : 'brightness(0.9)',
+        }}
+      />
+
+      {/* Overlay for better readability */}
+      <div className={`absolute inset-0 ${isDarkMode ? 'bg-black/20' : 'bg-black/10'}`} />
+
+      {/* Menu Bar */}
+      <div
+        className={`relative z-50 flex h-7 items-center border-b px-4 text-sm font-medium backdrop-blur-xl ${
+          isDarkMode
+            ? 'border-white/10 bg-gray-900/70 text-white'
+            : 'border-white/30 bg-white/20 text-white'
+        }`}
+      >
+        <div className="flex items-center space-x-4">
+          <span className="font-bold">🍎</span>
+          <button
+            className={`rounded px-2 py-0.5 ${
+              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
+            }`}
+          >
+            Archivo
+          </button>
+          <button
+            className={`rounded px-2 py-0.5 ${
+              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
+            }`}
+          >
+            Editar
+          </button>
+          <button
+            className={`rounded px-2 py-0.5 ${
+              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
+            }`}
+          >
+            Ver
+          </button>
+          <button
+            className={`rounded px-2 py-0.5 ${
+              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
+            }`}
+          >
+            Ir
+          </button>
+        </div>
+
+        <div className="ml-auto flex items-center space-x-4">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={`flex items-center space-x-1 rounded px-2 py-0.5 transition-colors ${
+              isDarkMode ? 'hover:bg-white/10' : 'hover:bg-white/20'
+            }`}
+            title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
+          >
+            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+
+          {/* Clock */}
+          <div>
+            {currentTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Icons */}
+      <div className="relative">
+        {desktopIcons.map((icon, idx) => (
+          <div
+            key={idx}
+            className="group absolute flex w-20 cursor-pointer flex-col items-center"
+            style={{ left: icon.x, top: icon.y }}
+            onDoubleClick={() =>
+              openWindow(
+                icon.name,
+                <div className={`p-6 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                  <p>Contenido de {icon.name}</p>
+                </div>
+              )
+            }
+          >
+            <div className="mb-1 text-5xl transition-transform group-hover:scale-110">
+              {icon.emoji}
+            </div>
+            <span
+              className={`rounded px-2 py-0.5 text-center text-xs backdrop-blur-sm ${
+                isDarkMode ? 'bg-black/50 text-white' : 'bg-black/30 text-white'
+              }`}
+            >
+              {icon.name}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Windows */}
+      {windows
+        .filter((w) => !w.isMinimized)
+        .map((window) => (
+          <div
+            key={window.id}
+            className={`absolute overflow-hidden rounded-xl border shadow-2xl backdrop-blur-xl ${
+              isDarkMode ? 'border-gray-700/50 bg-gray-800/95' : 'border-gray-200/50 bg-white/95'
+            }`}
+            style={{
+              left: window.x,
+              top: window.y,
+              width: window.width,
+              height: window.height,
+              zIndex: window.zIndex,
+              minWidth: '300px',
+              minHeight: '200px',
+            }}
+            onMouseDown={() => bringToFront(window.id)}
+          >
+            {/* Window Title Bar */}
+            <div
+              className={`flex h-10 cursor-move items-center border-b px-4 ${
+                isDarkMode
+                  ? 'border-gray-700 bg-gradient-to-b from-gray-700 to-gray-800'
+                  : 'border-gray-200 bg-gradient-to-b from-gray-100 to-gray-50'
+              }`}
+              onMouseDown={(e) => handleMouseDown(e, window.id)}
+            >
+              <div className="window-controls flex space-x-2">
+                <button
+                  onClick={() => closeWindow(window.id)}
+                  className="h-3 w-3 rounded-full bg-red-500 hover:bg-red-600"
+                />
+                <button
+                  onClick={() => minimizeWindow(window.id)}
+                  className="h-3 w-3 rounded-full bg-yellow-500 hover:bg-yellow-600"
+                />
+                <button
+                  onClick={() => maximizeWindow(window.id)}
+                  className="h-3 w-3 rounded-full bg-green-500 hover:bg-green-600"
+                />
+              </div>
+              <div
+                className={`flex-1 text-center text-sm font-medium ${
+                  isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                }`}
+              >
+                {window.title}
+              </div>
+            </div>
+
+            {/* Window Content */}
+            <div className="overflow-auto" style={{ height: window.height - 40 }}>
+              {window.component}
+            </div>
+
+            {/* Resize Handles - All 8 directions */}
+            {/* Corners */}
+            <div
+              className="resize-handle absolute bottom-0 right-0 h-3 w-3 cursor-se-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 'se')}
+            />
+            <div
+              className="resize-handle absolute bottom-0 left-0 h-3 w-3 cursor-sw-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 'sw')}
+            />
+            <div
+              className="resize-handle absolute right-0 top-10 h-3 w-3 cursor-ne-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 'ne')}
+            />
+            <div
+              className="resize-handle absolute left-0 top-10 h-3 w-3 cursor-nw-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 'nw')}
+            />
+
+            {/* Edges */}
+            <div
+              className="resize-handle absolute bottom-0 left-3 right-3 h-1 cursor-s-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 's')}
+            />
+            <div
+              className="resize-handle top-13 absolute bottom-3 left-0 w-1 cursor-w-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 'w')}
+            />
+            <div
+              className="resize-handle top-13 absolute bottom-3 right-0 w-1 cursor-e-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 'e')}
+            />
+            <div
+              className="resize-handle absolute left-3 right-3 top-10 h-1 cursor-n-resize"
+              onMouseDown={(e) => handleResizeMouseDown(e, window.id, 'n')}
+            />
+          </div>
+        ))}
+
+      {/* Dock */}
+      <div
+        className={`absolute bottom-2 left-1/2 flex -translate-x-1/2 transform items-end space-x-2 rounded-2xl border px-3 py-2 backdrop-blur-xl ${
+          isDarkMode ? 'border-white/20 bg-gray-900/40' : 'border-white/30 bg-white/20'
+        }`}
+      >
+        {dockIcons.map((icon, idx) => (
+          <button
+            key={idx}
+            onClick={() => openWindow(icon.name, icon.content, icon.width, icon.height)}
+            className="group relative"
+          >
+            <div
+              className={`flex h-14 w-14 items-center justify-center rounded-xl text-4xl shadow-lg backdrop-blur-sm transition-transform hover:-translate-y-2 hover:scale-110 ${
+                isDarkMode ? 'bg-gray-800/70' : 'bg-white/50'
+              }`}
+            >
+              {icon.emoji}
+            </div>
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800/90 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              {icon.name}
+            </div>
+          </button>
+        ))}
+
+        {/* Minimized Windows */}
+        {windows
+          .filter((w) => w.isMinimized)
+          .map((window) => (
+            <button
+              key={window.id}
+              onClick={() => restoreWindow(window.id)}
+              className="group relative"
+            >
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500/70 text-2xl shadow-lg backdrop-blur-sm transition-transform hover:-translate-y-2 hover:scale-110">
+                📄
+              </div>
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800/90 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                {window.title}
+              </div>
+            </button>
+          ))}
+      </div>
+    </div>
+  );
+};
+
+export default MacOSPortfolio;
